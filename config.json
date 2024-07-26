@@ -1,0 +1,8 @@
+{
+    "BOT_TOKEN": "7437575787:AAGTMpWsOP1lo1gEEhEBPUvMzHbdJ0_qFJw",
+    "MAINNET_API_TOKEN": "Your mainnet api token",
+    "TESTNET_API_TOKEN": "d6aab74b1c5f3040356d322541328e7116a66baf33633b3eccadbb05d1563b1b",
+    "MAINNET_WALLET": "Your mainnet wallet",
+    "TESTNET_WALLET": "0QBDuqa_FpkEP4lFkjhEDGEzuIBjJ3JsQvMmHNOO8RLT94hd",
+    "WORK_MODE": "testnet"
+}
