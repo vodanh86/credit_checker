@@ -14,12 +14,27 @@ Basic Echobot example, repeats messages.
 Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
-
+import os
 import logging
 import requests
 from datetime import datetime
 from requests import Request, Session
+import mysql.connector
+from dotenv import load_dotenv
 
+load_dotenv()
+
+mydb = mysql.connector.connect(
+  host=os.getenv('DB_HOST'),
+  user=os.getenv('DB_USER'),
+  password=os.getenv('DB_PASSWORD'),
+  database=os.getenv('DB_DATABASE'),
+)
+
+mycursor = mydb.cursor()
+mycursor.execute("SELECT token FROM tokens")
+myresult = mycursor.fetchone()
+token = myresult[0]
 
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
@@ -63,7 +78,7 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         time_delta_obj = datetime.now() - last_call
         diff_in_mins = int(time_delta_obj.total_seconds()/60)
-        waiting_mins = 3
+        waiting_mins = 0
 
         if diff_in_mins < waiting_mins:
             await update.message.reply_text("Try again after " + str(waiting_mins - diff_in_mins) + " minutes")
@@ -111,7 +126,7 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                         'sessionid': 'f9c8300f73ca66933d33d671'}
 
             headers = {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", 
-            "cookie": "beginCheckoutCart=-1; browserid=3766782376100557103; sessionid=f9c8300f73ca66933d33d671; timezoneOffset=25200,0; steamCountry=VN%7C84eb582c4ba621fe799c90318422c30e; ak_bmsc=0864DCB2486E3F123E7F25807AF9F200~000000000000000000000000000000~YAAQLdgjF1M47ueQAQAAbvnn8Rif8UpAqW7CpjprUeZBXd4YLSjpwRiPsN1nnAqF9KsV4Nu33CcqYsCeTB4OYYBGtwfeK7e++WeoPUC0UJ5wS/cMIgkhkDIGRjFHUqhDrW/+QhwBUAIhRiqfooYrc/X2BB/OZ9Q0591vWajvOtiac/FH2T5j02nkSs6il87czeuh9hKqiBIJTx4hu0LT2uK/ZH/NSpvE5lI2q8ppt/pAvYxuEPSsumYOc/rt1KPt7xBg0m3miWLPxpmhLdH4sUbCWK4yF3ucCVEzQTr+x3y8A4dTUk08+qZNNT30UL8DQ4qw+8Er4pDyxsH6ip9LaJXYxANBKC087bOoA6/vq9nqn6ZExJrAp6MewFpTPhTDPP37top1; steamLoginSecure=76561199749494830%7C%7CeyAidHlwIjogIkpXVCIsICJhbGciOiAiRWREU0EiIH0.eyAiaXNzIjogInI6MEY3Rl8yNEM5RDI0N18zRUI5RCIsICJzdWIiOiAiNzY1NjExOTk3NDk0OTQ4MzAiLCAiYXVkIjogWyAid2ViOmNoZWNrb3V0IiBdLCAiZXhwIjogMTcyMjEzMTk4OCwgIm5iZiI6IDE3MTM0MDU0MjksICJpYXQiOiAxNzIyMDQ1NDI5LCAianRpIjogIjBGOENfMjRDREQ2QTlfNDkzMTAiLCAib2F0IjogMTcyMjA0NTQyOSwgInJ0X2V4cCI6IDE3NDAxMjE5MjcsICJwZXIiOiAwLCAiaXBfc3ViamVjdCI6ICIxMDQuMjguMjIyLjc1IiwgImlwX2NvbmZpcm1lciI6ICIxMDQuMjguMjIyLjc1IiB9.ehVUOcYfmthUXi_410YU4qWH2TxGjfyfY0k2QccxS8OH13BeQeSDP3p3TuPx0nuURYe531ST2b_L1ez2az8zCA"}
+            "cookie": token}
             response = requests.post(url, headers=headers, data=raw_data)
             declined_result = """⚜️Card ➔  """ + cc + """
 ⚜️Status ➔  𝐃𝐞𝐜𝐥𝐢𝐧𝐞𝐝 ❌ 
