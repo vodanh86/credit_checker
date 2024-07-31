@@ -78,7 +78,7 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         time_delta_obj = datetime.now() - last_call
         diff_in_mins = int(time_delta_obj.total_seconds()/60)
-        waiting_mins = 0
+        waiting_mins = 3
 
         if diff_in_mins < waiting_mins:
             await update.message.reply_text("Try again after " + str(waiting_mins - diff_in_mins) + " minutes")
