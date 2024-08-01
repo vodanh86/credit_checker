@@ -14,6 +14,8 @@ Basic Echobot example, repeats messages.
 Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram import ForceReply, Update
 import os
 import logging
 import requests
@@ -25,19 +27,32 @@ from dotenv import load_dotenv
 load_dotenv()
 
 mydb = mysql.connector.connect(
-  host=os.getenv('DB_HOST'),
-  user=os.getenv('DB_USER'),
-  password=os.getenv('DB_PASSWORD'),
-  database=os.getenv('DB_DATABASE'),
+    host=os.getenv('DB_HOST'),
+    user=os.getenv('DB_USER'),
+    password=os.getenv('DB_PASSWORD'),
+    database=os.getenv('DB_DATABASE'),
 )
 
 mycursor = mydb.cursor()
-mycursor.execute("SELECT token FROM tokens")
-myresult = mycursor.fetchone()
-token = myresult[0]
 
-from telegram import ForceReply, Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+
+def get_token():
+    dict_raw_data = {}
+    cokie = ""
+
+    mycursor.execute("SELECT token FROM tokens")
+    myresult = mycursor.fetchone()
+    lines = myresult[0].split('\\')
+    for line in lines:
+        if line.find('--data-raw') > -1:
+            raw_data = line.split('--data-raw')[1].strip().strip("'")
+            params = raw_data.split('&')
+            for param in params:
+                dict_raw_data[param.split('=')[0]] = param.split('=')[1]
+        if line.find('cookie:') > -1:
+            cokie = line.split('cookie:')[1].strip().strip("'")
+    return (dict_raw_data, cokie)
+
 
 # Enable logging
 logging.basicConfig(
@@ -83,50 +98,19 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         if diff_in_mins < waiting_mins:
             await update.message.reply_text("Try again after " + str(waiting_mins - diff_in_mins) + " minutes")
         else:
+            params = get_token()
+            token = params[1]
+            raw_data = params[0]
             last_call = datetime.now()
             url = 'https://checkout.steampowered.com/checkout/inittransaction/'
-            raw_data = {'gidShoppingCart': '-1',
-                        'gidReplayOfTransID': '-1',
-                        'bUseAccountCart': '1',
-                        'PaymentMethod': 'visa' if cc_infos[0][0] == "4" else "master",
-                        'abortPendingTransactions': '0',
-                        'bHasCardInfo': '1',
-                        'CardNumber': cc_infos[0],
-                        'CardExpirationYear': '20' + cc_infos[2],
-                        'CardExpirationMonth': cc_infos[1],
-                        'FirstName': 'cuong',
-                        'LastName': 'guong',
-                        'Address': 'hanoi',
-                        'AddressTwo': '',
-                        'Country': 'VN',
-                        'City': '00000',
-                        'State': '',
-                        'PostalCode': '00000',
-                        'Phone': '%2B84973621400',
-                        'ShippingFirstName': '',
-                        'ShippingLastName': '',
-                        'ShippingAddress': '',
-                        'ShippingAddressTwo': '',
-                        'ShippingCountry': 'VN',
-                        'ShippingCity': '',
-                        'ShippingState': '',
-                        'ShippingPostalCode': '',
-                        'ShippingPhone': '',
-                        'bIsGift': '0',
-                        'GifteeAccountID': '0',
-                        'GifteeEmail': '', 'GifteeName': '',
-                        'GiftMessage': '', 'Sentiment': '',
-                        'Signature': '', 'ScheduledSendOnDate': '0',
-                        'BankAccount': '',
-                        'BankCode': '', 'BankIBAN': '',
-                        'BankBIC': '', 'TPBankID': '',
-                        'BankAccountID': '', 'bSaveBillingAddress': '1',
-                        'gidPaymentID': '', 'bUseRemainingSteamAccount': '0',
-                        'bPreAuthOnly': '0',
-                        'sessionid': 'f9c8300f73ca66933d33d671'}
 
-            headers = {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", 
-            "cookie": token}
+            raw_data['PaymentMethod'] = 'visa' if cc_infos[0][0] == "4" else "mastercard"
+            raw_data['CardNumber'] = cc_infos[0]
+            raw_data['CardExpirationYear'] = '20' + cc_infos[2]
+            raw_data['CardExpirationMonth'] = cc_infos[1]
+
+            headers = {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                       "cookie": token}
             response = requests.post(url, headers=headers, data=raw_data)
             declined_result = """⚜️Card ➔  """ + cc + """
 ⚜️Status ➔  𝐃𝐞𝐜𝐥𝐢𝐧𝐞𝐝 ❌ 
