@@ -26,20 +26,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-mydb = mysql.connector.connect(
-    host=os.getenv('DB_HOST'),
-    user=os.getenv('DB_USER'),
-    password=os.getenv('DB_PASSWORD'),
-    database=os.getenv('DB_DATABASE'),
-)
-
-mycursor = mydb.cursor()
-
-
 def get_token():
     dict_raw_data = {}
     cokie = ""
+    mydb = mysql.connector.connect(
+        host=os.getenv('DB_HOST'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        database=os.getenv('DB_DATABASE'),
+    )
 
+    mycursor = mydb.cursor()
     mycursor.execute("SELECT token FROM tokens")
     myresult = mycursor.fetchone()
     lines = myresult[0].split('\\')
@@ -51,6 +48,9 @@ def get_token():
                 dict_raw_data[param.split('=')[0]] = param.split('=')[1]
         if line.find('cookie:') > -1:
             cokie = line.split('cookie:')[1].strip().strip("'")
+
+    mycursor.close()
+    mydb.close()
     return (dict_raw_data, cokie)
 
 
