@@ -38,9 +38,10 @@ def get_token():
     )
 
     mycursor = mydb.cursor()
-    mycursor.execute("SELECT token FROM tokens")
+    mycursor.execute("SELECT * FROM tokens")
     myresult = mycursor.fetchone()
-    lines = myresult[0].split('\\')
+    lines = myresult[1].split('\\')
+
     for line in lines:
         if line.find('--data-raw') > -1:
             raw_data = line.split('--data-raw')[1].strip().strip("'")
@@ -52,7 +53,7 @@ def get_token():
 
     mycursor.close()
     mydb.close()
-    return (dict_raw_data, cokie)
+    return (dict_raw_data, cokie, int(myresult[5]))
 
 
 # Enable logging
@@ -100,6 +101,13 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             await update.message.reply_text("Try again after " + str(waiting_mins - diff_in_mins) + " minutes")
         else:
             params = get_token()
+            logger.info(params)
+            expired_time = datetime.fromtimestamp(params[2])
+            logger.info(expired_time)
+            if expired_time < datetime.now():
+                await update.message.reply_text("Token is expired")
+                return True
+
             token = params[1]
             raw_data = params[0]
             last_call = datetime.now()
@@ -155,7 +163,8 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                     url = 'https://checkout.steampowered.com/checkout/transactionstatus/'
                     raw_data = {"count": 0, "transid": trans_id}
                     logger.info(raw_data)
-                    response = requests.get(url, headers=headers, params=raw_data).json()
+                    response = requests.get(
+                        url, headers=headers, params=raw_data).json()
                     logger.info(response)
                     if (response["success"] == 22):
                         await update.message.reply_text(approved_result)
