@@ -114,7 +114,7 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                        "cookie": token}
             response = requests.post(
                 url, headers=headers, data=raw_data).json()
-            print(response)
+            logger.info(response)
             declined_result = """⚜️Card ➔  """ + cc + """
 ⚜️Status ➔  𝐃𝐞𝐜𝐥𝐢𝐧𝐞𝐝 ❌ 
 ⚜️Gateway ➔   Paypal 0.1 $ 
@@ -147,16 +147,16 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                             "browserInfo": '{"language":"en-US","javaEnabled":"false","colorDepth":24,"screenHeight":1080,"screenWidth":1920}'}
                 response = requests.get(
                     url, headers=headers, params=raw_data).json()
-                print(raw_data)
-                print(response)
+                logger.info(raw_data)
+                logger.info(response)
                 if response["success"] != 22:
                     await update.message.reply_text(declined_result)
                 else:
                     url = 'https://checkout.steampowered.com/checkout/transactionstatus/'
                     raw_data = {"count": 0, "transid": trans_id}
-                    print(raw_data)
+                    logger.info(raw_data)
                     response = requests.get(url, headers=headers, params=raw_data).json()
-                    print(response)
+                    logger.info(response)
                     if (response["success"] == 22):
                         await update.message.reply_text(approved_result)
                     else:
